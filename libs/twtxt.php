@@ -294,28 +294,102 @@ function getCachedFileContents($filePath) {
 	return null;
 }
 
-function updateCachedFile($filePath, $cacheDurationSecs = 15) {
+function updateCachedFile($filePath, $cacheDurationSecs = 15)
+{
 	$cacheFilePath = getCachedFileName($filePath);
 
-	// File doesn't exist in cache or has expired, so fetch and cache it
-	// TODO: Seems it's not working right!
-	$fileDoesntExist = !file_exists($cacheFilePath);
-	$fileIsOld = false;
-	if (!$fileDoesntExist) {
-		$fileIsOld = !((time() - filemtime($cacheFilePath)) < $cacheDurationSecs);
+	# TODO: Report down URLs and stop loading them after a few tries
+
+	# TODO: Add a strategy of only receiving (and saving) the file
+	# when it has changed, requesting it with the 'If-Modified-Since' header
+
+	// Get the last modification time of the local file
+	$lastModifiedTime = file_exists($cacheFilePath) ? filemtime($cacheFilePath) : false;
+	$lastModifiedHeader = $lastModifiedTime ? gmdate('D, d M Y H:i:s', $lastModifiedTime) . ' GMT' : null;
+
+	# echo "lastModifiedHeader: $lastModifiedHeader<br>\n";
+
+	// Set up the HTTP context with the 'If-Modified-Since' header
+	$options = [
+		'http' => [
+			'method' => 'GET',
+			'header' => $lastModifiedHeader ? "If-Modified-Since: $lastModifiedHeader\r\n" : '',
+		]
+	];
+
+	$context = stream_context_create($options);
+
+	$response = @file_get_contents($filePath, false, $context);
+
+	// Check if HTTP headers are available, usually when the server is available
+	if (!isset($http_response_header)) {
+		echo "Failed to fetch headers. No HTTP request was made.\n";
+		return;
 	}
 
-	if ($fileDoesntExist || $fileIsOld) {
-		#echo "Loading Cached file $cacheFilePath<br>\n";
-		$contents = @file_get_contents($filePath);
+	if ($http_response_header) {
+		# var_dump($http_response_header);
 
-		if ($contents === false) {
-			// File loaded with errors, skip saving it
-			return;
+		foreach ($http_response_header as $header) {
+			# Look for the Last-Modified header
+			if (preg_match('/^Last-Modified:\s*(.+)$/i', $header, $matches)) {
+				$dateString = $matches[1]; // Extracted date
+				echo "Extracted Date: $dateString\n";
+		
+				// Convert to Unix timestamp
+				$lastModifiedTimestamp = strtotime($dateString);
+				if ($lastModifiedTimestamp > $lastModifiedTime) {
+					echo "Remote file is newer. Load it!<br>\n";
+				} else {
+					echo "Not modified since last request. No update needed.<br>\n";
+					return;
+				}
+			} 
+
+			/*
+			// Look for the HTTP status line
+			if (preg_match('#^HTTP/\d+\.\d+\s+(\d+)#', $header, $matches)) {
+				$httpCode = intval($matches[1]);
+				echo "HTTP Code: $httpCode<br>\n";
+
+				if ($httpCode === 304) {
+					echo "Not modified since last request. No update needed.<br>\n";
+					return;
+				} elseif ($httpCode !== 200) {
+					echo "Error: HTTP $httpCode<br>\n";
+					return;
+				}
+			}
+			*/
 		}
-
-		file_put_contents($cacheFilePath, $contents);
 	}
+
+	// Save the content if it was successfully retrieved
+	if ($response !== false) {
+		file_put_contents($cacheFilePath, $response);
+		echo "File updated successfully.\n";
+	}
+
+	// // File doesn't exist in cache or has expired, so fetch and cache it
+	// // TODO: Seems it's not working right!
+	// $fileDoesntExist = !file_exists($cacheFilePath);
+	// $fileIsOld = false;
+	// if (!$fileDoesntExist) {
+	// 	$fileIsOld = !((time() - filemtime($cacheFilePath)) < $cacheDurationSecs);
+	// }
+
+	// if ($fileDoesntExist || $fileIsOld) {
+	// 	#echo "Loading Cached file $cacheFilePath<br>\n";
+	// 	# @ is to silence errors
+	// 	$contents = @file_get_contents($filePath);
+
+	// 	if ($contents === false) {
+	// 		// File loaded with errors, skip saving it
+	// 		return;
+	// 	}
+
+	// 	file_put_contents($cacheFilePath, $contents);
+	// }
 }
 
 function getTwtsFromTwtxtString($url) {
