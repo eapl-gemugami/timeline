@@ -1,10 +1,4 @@
 <?php
-ini_set('output_buffering', 'off');
-ini_set('zlib.output_compression', 0);
-
-header('Content-Type: text/html; charset=utf-8');
-header('Cache-Control: no-cache'); // Forces the browser to not cache.
-header('Connection: keep-alive'); // Keeps the connection open for continuous output.
 
 require_once("partials/base.php");
 
@@ -13,14 +7,32 @@ if (!isset($_SESSION['password'])) {
     exit();
 }
 
-// Start output buffering
-ob_implicit_flush(true);
+//ob_start();
+
+$title = "Refresh - ".$title;
+
+ob_end_flush();
+
+include 'partials/header.php';
+
+?>
+
+<p id="refreshLabel">
+    <strong id="refreshInfo">Loading feeds followed by:</strong>
+    <span id="refreshURL"><?= preg_replace('(^https?://)', '', $url) ?></span>
+    <span id="refreshCounter"></span>
+</p>
+<progress id="refreshProgress" value=""></progress>
+
+<?php
+
+include 'partials/footer.php';
 ob_start();
 
-// Get URL from query 
-$url = $config['public_txt_url'];
+flush();
 
-$url = $_GET['url'] ?? null;
+// Get URL from query 
+$url = $_GET['url'] ?? $config['public_txt_url'];
 
 if (filter_var($url, FILTER_VALIDATE_URL) === FALSE) {
     die('Not a valid URL');
@@ -38,19 +50,41 @@ foreach ($fileLines as $currentLine) {
 }
 
 // Loop over feeds followed 
+
+/* Progress bar based on: https://github.com/w3shaman/php-progress-bar */
+
 $i = 1;
 $total = count($twtFollowingList);
 
-foreach ($twtFollowingList as $following) {
-    $float = $i / $total;
-    $percent = intval($float * 100) . "%";
+echo '<script language="javascript">document.getElementById("refreshInfo").innerHTML = "Updating feed from:"</script>';
 
-    $fileURL = $following[1];
-    echo "<br>\n<br>\n$percent - $fileURL<br>\n";
-    updateCachedFile($fileURL);
+foreach ($twtFollowingList as $following) { 
+    //ob_start();
+    $float = $i/$total;
+    $percent = intval($float * 100)."%";
+    $feed = $following[1];
+    //$feed = preg_replace('(^https?://)', '', $feed);
+    //$feed = $following[0].'@'. parse_url($following[1], PHP_URL_HOST);
+    $feed = $following[0].' ('.$following[1].')';
+
+    // Javascript for updating the progress bar and information
+    echo '<script language="javascript">
+            document.getElementById("refreshURL").innerHTML = "'.$feed.'";
+            document.getElementById("refreshCounter").innerHTML = "('.$i.' of '.$total.')";
+            document.getElementById("refreshProgress").value = "'.$float.'"; 
+            document.getElementById("refreshProgress").innerHTML = "'.$percent.'"; 
+        </script>';
+
+    updateCachedFile($following[1]);
     ob_flush(); // Send output to browser immediately
     flush();
     $i++;
 }
 
-ob_end_flush(); // End output buffering
+// Tell user that the process is completed
+echo '<script language="javascript">
+        document.getElementById("refreshInfo").innerHTML="Refreshed '.$total.' feeds from:";
+        document.getElementById("refreshURL").innerHTML = "'.preg_replace('(^https?://)', '', $url).'";
+        document.getElementById("refreshCounter").innerHTML = "";
+        history.back();
+    </script>';
