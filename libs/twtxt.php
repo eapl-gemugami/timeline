@@ -303,17 +303,46 @@ function updateCachedFile($filePath, $cacheDurationSecs = 15)
 	# TODO: Add a strategy of only receiving (and saving) the file
 	# when it has changed, requesting it with the 'If-Modified-Since' header
 
-	// Get the last modification time of the local file
+	# Get the last modification time of the local file
 	$lastModifiedTime = file_exists($cacheFilePath) ? filemtime($cacheFilePath) : false;
 	$lastModifiedHeader = $lastModifiedTime ? gmdate('D, d M Y H:i:s', $lastModifiedTime) . ' GMT' : null;
 
+	$header = $lastModifiedHeader ? "If-Modified-Since: $lastModifiedHeader\r\n" : '';
 	# echo "lastModifiedHeader: $lastModifiedHeader<br>\n";
+
+	# TODO: Avoid reading the config for each refreshed file
+	# TODO: Perhaps add this validations to index.php to avoid
+	# missing parameters
+	$config = parse_ini_file('private/config.ini');
+	if (!array_key_exists('public_txt_url', $config)) {
+		die('Check your config.ini. `public_txt_url` is missing');
+	}
+
+	if (!array_key_exists('public_nick', $config)) {
+		die('Check your config.ini. `public_nick` is missing');
+	}
+
+	$url = $config['public_txt_url'];
+	$nick = $config['public_nick'];
+
+	if (!filter_var($url, FILTER_VALIDATE_URL)) {
+		die('Your URL is not valid. Check your config.ini: $url');
+	}
+
+	if (strlen($nick) <= 0) {
+		die('Your nick couldn\'t be empty. Check your config.ini: $nick');
+	}
+	
+	$twtxtVersion = 'twtxt/1.2.3';
+	$userAgentHeader = "User-Agent: $twtxtVersion (+$url; @$nick)\r\n";
+
+	$header .= $userAgentHeader;
 
 	// Set up the HTTP context with the 'If-Modified-Since' header
 	$options = [
 		'http' => [
 			'method' => 'GET',
-			'header' => $lastModifiedHeader ? "If-Modified-Since: $lastModifiedHeader\r\n" : '',
+			'header' => $header,
 		]
 	];
 
