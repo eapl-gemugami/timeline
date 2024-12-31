@@ -188,9 +188,15 @@ try {
     if ($fn === 'getCreateArgs') {
         $timeoutSecs = 30;
 
+        # Exclude credential IDs for that user
         $excludeCredentialIds = [];
-        # TODO: Dummy example, read this from DB
-        $excludeCredentialIds[] = base64_decode('dmRmLs2BT6eTtm07aIIsiA==');
+
+        $jsonContent = loadJsonFromFile($filePath);
+        foreach ($jsonContent as $reg) {
+            if ($reg['userId'] === $userId) {
+                $excludeCredentialIds[] = base64_decode($reg['credentialId']);
+            }
+        }
 
         $createArgs = $WebAuthn->getCreateArgs(\hex2bin($userId), $userName, $userDisplayName, $timeoutSecs, $requireResidentKey, $userVerification, $crossPlatformAttachment, $excludeCredentialIds);
 
@@ -201,7 +207,7 @@ try {
 
         print(json_encode($createArgs));
 
-        // Save challange to session. You have to deliver it to processGet later.
+        # Save challenge to session. You have to deliver it to processGet later.
         $_SESSION['challenge'] = $WebAuthn->getChallenge();
 
         // ------------------------------------
