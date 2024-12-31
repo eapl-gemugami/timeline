@@ -33,9 +33,10 @@
  * ------------------------------------------------------------
  */
 
-# TODO
+# TODO: 2024-12
 # [x] Save keys into a file
-# [ ] Check that a user already registered, can't register again
+# [x] Disable showing sensitive debug info
+# [ ] Check that a user already registered can't register again
 
 require_once 'libs/WebAuthn-2.2.0/WebAuthn.php';
 
@@ -45,8 +46,6 @@ $filePath = 'private/webauthn/secrets.json';
 
 function saveJsonToFile($filePath, $data) {
     # Convert PHP array or object to JSON string
-    #$jsonData = json_encode($data, JSON_PRETTY_PRINT | JSON_HEX_TAG
-    #    | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
     $jsonData = json_encode($data, JSON_PRETTY_PRINT);
     if ($jsonData === false) {
         var_dump($data);
@@ -60,25 +59,18 @@ function saveJsonToFile($filePath, $data) {
     #echo "Data saved to $filePath\n";
 }
 
-// 2. Load the data from the JSON file
 function loadJsonFromFile($filePath) {
-    /*
-    if (!file_exists($filePath)) {
-        die("File not found: $filePath");
-    }
-    */
-
-    // Read JSON string from the file
+    # Read JSON string from the file
     $jsonData = file_get_contents($filePath);
     if ($jsonData === false) {
-        #die("Error reading from file: $filePath");
+        # If doesn't exist, create an empty array
         return [];
     }
 
-    // Convert JSON string back to PHP array or object
+    # Convert JSON string back to PHP array
     $data = json_decode($jsonData, true);
     if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-        #die("Error decoding JSON: " . json_last_error_msg());
+        # If it's corrupted, return an empty array
         return [];
     }
 
@@ -107,6 +99,7 @@ try {
     }
 
     if ($fn !== 'getStoredDataHtml') {
+        // TODO: Disable this function completely
         // Formats
         $formats = [];
         if (filter_input(INPUT_GET, 'fmt_android-key')) {
@@ -161,6 +154,7 @@ try {
         $WebAuthn = new lbuchs\WebAuthn\WebAuthn(RP_NAME, $rpId, $formats);
 
         // add root certificates to validate new registrations
+        /*
         if (filter_input(INPUT_GET, 'solo')) {
             $WebAuthn->addRootCertificates('rootCertificates/solo.pem');
             $WebAuthn->addRootCertificates('rootCertificates/solokey_f1.pem');
@@ -185,18 +179,29 @@ try {
         if (filter_input(INPUT_GET, 'mds')) {
             $WebAuthn->addRootCertificates('rootCertificates/mds');
         }
+        */
     }
 
     // ------------------------------------
     // request for create arguments
     // ------------------------------------
     if ($fn === 'getCreateArgs') {
-        $createArgs = $WebAuthn->getCreateArgs(\hex2bin($userId), $userName, $userDisplayName, 60 * 4, $requireResidentKey, $userVerification, $crossPlatformAttachment);
+        $timeoutSecs = 30;
+
+        $excludeCredentialIds = [];
+        # TODO: Dummy example, read this from DB
+        $excludeCredentialIds[] = base64_decode('dmRmLs2BT6eTtm07aIIsiA==');
+
+        $createArgs = $WebAuthn->getCreateArgs(\hex2bin($userId), $userName, $userDisplayName, $timeoutSecs, $requireResidentKey, $userVerification, $crossPlatformAttachment, $excludeCredentialIds);
+
+        # It seems that the binary format is not supported, so we convert it to Hex
+        $createArgs->publicKey->user->id = $createArgs->publicKey->user->id->getHex();
 
         header('Content-Type: application/json');
+
         print(json_encode($createArgs));
 
-        // save challange to session. you have to deliver it to processGet later.
+        // Save challange to session. You have to deliver it to processGet later.
         $_SESSION['challenge'] = $WebAuthn->getChallenge();
 
         // ------------------------------------
@@ -246,12 +251,11 @@ try {
         $challenge = $_SESSION['challenge'];
 
         // processCreate returns data to be stored for future logins.
-        // in this example we store it in the php session.
-        // Normaly you have to store the data in a database connected
-        // with the user name.
         $data = $WebAuthn->processCreate($clientDataJSON, $attestationObject, $challenge, $userVerification === 'required', true, false);
 
-        // add user infos
+        // Check if the AAGUID for that user already exists
+
+        // Add user info
         $data->userId = $userId;
         $data->userName = $userName;
         $data->userDisplayName = $userDisplayName;
@@ -260,17 +264,16 @@ try {
         $data->AAGUID = base64_encode($data->AAGUID);
 
         $jsonData = loadJsonFromFile($filePath);
+
+        # NOTE: Checking if the device is already registered was removed
+        # But perhaps it'll need to be added again for some devices.
+
         $jsonData[] = $data;
-        saveJsonToFile($filePath, $jsonData);
+            saveJsonToFile($filePath, $jsonData);
 
-        if (!isset($_SESSION['registrations']) || !array_key_exists('registrations', $_SESSION) || !is_array($_SESSION['registrations'])) {
-            $_SESSION['registrations'] = [];
-        }
-        $_SESSION['registrations'][] = $data;
-
-        $msg = 'registration success.';
+        $msg = 'Registration success.';
         if ($data->rootValid === false) {
-            $msg = 'registration ok, but certificate does not match any of the selected root ca.';
+            $msg = 'Registration ok, but certificate does not match any of the selected Root CA.';
         }
 
         $return = new stdClass();
@@ -343,6 +346,7 @@ try {
         // ------------------------------------
 
     } else if ($fn === 'getStoredDataHtml') {
+        /*
         $html = '<!DOCTYPE html>' . "\n";
         $html .= '<html><head><style>tr:nth-child(even){background-color: #f2f2f2;}</style></head>';
         $html .= '<body style="font-family:sans-serif">';
@@ -369,6 +373,8 @@ try {
             $html .= '<p>There are no registrations in this session.</p>';
         }
         $html .= '</body></html>';
+        */
+        $html = 'Data preview disabled';
 
         header('Content-Type: text/html');
         print $html;

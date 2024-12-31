@@ -15,29 +15,28 @@ license https://github.com/lbuchs/WebAuthn/blob/master/LICENSE MIT
          */
         async function createRegistration() {
             try {
-
-                // check browser support
+                // Check browser support
                 if (!window.fetch || !navigator.credentials || !navigator.credentials.create) {
                     throw new Error('Browser not supported.');
                 }
 
-                // get create args
+                // Get create args
                 let rep = await window.fetch('api?fn=getCreateArgs' + getGetParams(), {
                     method: 'GET',
                     cache: 'no-cache'
                 });
                 const createArgs = await rep.json();
 
-                // error handling
+                // Generic error handling
                 if (createArgs.success === false) {
                     throw new Error(createArgs.msg || 'unknown error occured');
                 }
 
-                // replace binary base64 data with ArrayBuffer. a other way to do this
+                // Replace binary base64 data with ArrayBuffer. a other way to do this
                 // is the reviver function of JSON.parse()
                 recursiveBase64StrToArrayBuffer(createArgs);
 
-                // create credentials
+                // Create credentials
                 const cred = await navigator.credentials.create(createArgs);
 
                 // create object
@@ -555,10 +554,12 @@ license https://github.com/lbuchs/WebAuthn/blob/master/LICENSE MIT
                 </details>
             </div>
         </div>
+        <!--
         <div class="serverPreview">
             <p style="margin-left:10px;font-weight: bold;">Here you can see what's saved on the server:</p>
             <iframe src="api?fn=getStoredDataHtml" id="serverPreview"></iframe>
         </div>
+        -->
         <div>
 </body>
 
