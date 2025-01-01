@@ -22,11 +22,11 @@
  *
  *              VALIDATION
  *
- *      window.fetch ------------------>      getGetArgs
+ *      window.fetch ------------------>      getCredentialsGetArgs
  *                                                |
  *   navigator.credentials.get   <----------------'
  *           |
- *           '------------------------->      processGet
+ *           '------------------------->      processCredentialsGet
  *                                                |
  *         alert ok or fail      <----------------'
  *
@@ -41,6 +41,8 @@
 require_once 'libs/WebAuthn-2.2.0/WebAuthn.php';
 
 const RP_NAME = 'Timeline'; # Add site name or domain
+const USER_ID = '01'; # For a single user instance we use a constant one
+const TIMEOUT_SECS = 30;
 
 $filePath = 'private/webauthn/secrets.json';
 
@@ -56,7 +58,6 @@ function saveJsonToFile($filePath, $data) {
     if (file_put_contents($filePath, $jsonData) === false) {
         die("Error writing to file: $filePath");
     }
-    #echo "Data saved to $filePath\n";
 }
 
 function loadJsonFromFile($filePath) {
@@ -99,7 +100,6 @@ try {
     }
 
     if ($fn !== 'getStoredDataHtml') {
-        // TODO: Disable this function completely
         // Formats
         $formats = [];
         if (filter_input(INPUT_GET, 'fmt_android-key')) {
@@ -186,8 +186,6 @@ try {
     // request for create arguments
     // ------------------------------------
     if ($fn === 'getCreateArgs') {
-        $timeoutSecs = 30;
-
         # Exclude credential IDs for that user
         $excludeCredentialIds = [];
 
@@ -198,10 +196,7 @@ try {
             }
         }
 
-        $createArgs = $WebAuthn->getCreateArgs(\hex2bin($userId), $userName, $userDisplayName, $timeoutSecs, $requireResidentKey, $userVerification, $crossPlatformAttachment, $excludeCredentialIds);
-
-        # It seems that the binary format is not supported, so we convert it to Hex
-        $createArgs->publicKey->user->id = $createArgs->publicKey->user->id->getHex();
+        $createArgs = $WebAuthn->getCreateArgs(\hex2bin($userId), $userName, $userDisplayName, TIMEOUT_SECS, $requireResidentKey, $userVerification, $crossPlatformAttachment, $excludeCredentialIds);
 
         header('Content-Type: application/json');
 
@@ -214,9 +209,10 @@ try {
         // request for get arguments
         // ------------------------------------
 
-    } else if ($fn === 'getGetArgs') {
+    } else if ($fn === 'getCredentialsGetArgs') {
         $ids = [];
 
+        /*
         if ($requireResidentKey) {
             if (!isset($_SESSION['registrations']) || !is_array($_SESSION['registrations']) || count($_SESSION['registrations']) === 0) {
                 throw new Exception('we do not have any registrations in session to check the registration');
@@ -237,20 +233,28 @@ try {
                 throw new Exception("no registrations in session for userId $userId");
             }
         }
+        */
 
-        $getArgs = $WebAuthn->getGetArgs($ids, 60 * 4, $typeUsb, $typeNfc, $typeBle, $typeHyb, $typeInt, $userVerification);
+        if (!$requireResidentKey) {
+            $registrations = loadJsonFromFile($filePath);
+            foreach ($registrations as $reg) {
+                if ($reg['userId'] === USER_ID) {
+                    $ids[] = $reg['credentialId'];
+                }
+            }
+        }
+
+        $getArgs = $WebAuthn->getGetArgs($ids, TIMEOUT_SECS, $typeUsb, $typeNfc, $typeBle, $typeHyb, $typeInt, $userVerification);
 
         header('Content-Type: application/json');
         print(json_encode($getArgs));
 
-        // save challange to session. you have to deliver it to processGet later.
+        # Save challenge to session. You have to deliver it to processGet later.
         $_SESSION['challenge'] = $WebAuthn->getChallenge();
-
 
         // ------------------------------------
         // process create
         // ------------------------------------
-
     } else if ($fn === 'processCreate') {
         $clientDataJSON = base64_decode($post->clientDataJSON);
         $attestationObject = base64_decode($post->attestationObject);
@@ -258,8 +262,6 @@ try {
 
         // processCreate returns data to be stored for future logins.
         $data = $WebAuthn->processCreate($clientDataJSON, $attestationObject, $challenge, $userVerification === 'required', true, false);
-
-        // Check if the AAGUID for that user already exists
 
         // Add user info
         $data->userId = $userId;
@@ -275,7 +277,7 @@ try {
         # But perhaps it'll need to be added again for some devices.
 
         $jsonData[] = $data;
-            saveJsonToFile($filePath, $jsonData);
+        saveJsonToFile($filePath, $jsonData);
 
         $msg = 'Registration success.';
         if ($data->rootValid === false) {
@@ -292,8 +294,7 @@ try {
         // ------------------------------------
         // proccess get
         // ------------------------------------
-
-    } else if ($fn === 'processGet') {
+    } else if ($fn === 'processCredentialsGet') {
         $clientDataJSON = base64_decode($post->clientDataJSON);
         $authenticatorData = base64_decode($post->authenticatorData);
         $signature = base64_decode($post->signature);
@@ -302,10 +303,9 @@ try {
         $challenge = $_SESSION['challenge'] ?? '';
         $credentialPublicKey = null;
 
-        // looking up correspondending public key of the credential id
+        // Looking up correspondending public key of the credential id
         // you should also validate that only ids of the given user name
         // are taken for the login.
-
         $registrations = loadJsonFromFile($filePath);
         foreach ($registrations as $reg) {
             if ($reg['credentialId'] === $post->id) {
@@ -318,13 +318,19 @@ try {
             throw new Exception('Public Key for credential ID not found!');
         }
 
-        // if we have resident key, we have to verify that the userHandle is the provided userId at registration
+        // If we have resident key, we have to verify
+        // that the userHandle is the provided userId at registration
         if ($requireResidentKey && $userHandle !== hex2bin($reg['userId'])) {
-            throw new \Exception('userId doesnt match (is ' . bin2hex($userHandle) . ' but expect ' . $reg->userId . ')');
+            throw new \Exception('userId doesnt match (is '
+                . bin2hex($userHandle) . ' but expect ' . $reg->userId . ')');
         }
 
-        // process the get request. throws WebAuthnException if it fails
+        // Process the get request. throws WebAuthnException if it fails
         $WebAuthn->processGet($clientDataJSON, $authenticatorData, $signature, $credentialPublicKey, $challenge, null, $userVerification === 'required');
+
+        # Check if we can set the session cookie here
+        session_start();
+        $_SESSION['password'] = 'OK';
 
         $return = new stdClass();
         $return->success = true;
@@ -335,7 +341,7 @@ try {
         // ------------------------------------
         // proccess clear registrations
         // ------------------------------------
-
+        /*
     } else if ($fn === 'clearRegistrations') {
         $_SESSION['registrations'] = null;
         $_SESSION['challenge'] = null;
@@ -351,6 +357,7 @@ try {
         // display stored data as HTML
         // ------------------------------------
 
+    */
     } else if ($fn === 'getStoredDataHtml') {
         /*
         $html = '<!DOCTYPE html>' . "\n";

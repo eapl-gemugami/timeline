@@ -43,9 +43,10 @@ $routes = [
     //'/thumb' => 'thumb.php',
     '/upload' => 'upload_img.php',
     '/webmention' => 'webmention_endpoint.php',
-    
+
     '/webauthn/api' => 'webauthn/api.php',
     '/webauthn/register' => 'webauthn/register.php',
+    '/webauthn/login' => 'webauthn/login.php',
     '/webauthn/test-client' => 'webauthn/client.php',
 ];
 

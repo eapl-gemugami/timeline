@@ -29,6 +29,7 @@ class TwtxtFile {
 class Twt {
 	public $originalTwtStr;
 	public $hash;
+	public $domain;
 	public $timestamp;
 	public $fullDate;
 	public $displayDate;
@@ -525,7 +526,7 @@ function getTwtsFromTwtxtString($url) {
 				$twtContent = $Parsedown->text($twtContent);
 
 				// TODO: Remove obserlete fuctions, or build our own simpler markdown parser?
-				//$twtContent = replaceMarkdownLinksFromTwt($twtContent); 
+				//$twtContent = replaceMarkdownLinksFromTwt($twtContent);
 				//$twtContent = replaceImagesFromTwt($twtContent);
 				//$twtContent = replaceLinksFromTwt($twtContent);
 

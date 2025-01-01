@@ -82,7 +82,7 @@ license https://github.com/lbuchs/WebAuthn/blob/master/LICENSE MIT
                 }
 
                 // get check args
-                let rep = await window.fetch('api?fn=getGetArgs' + getGetParams(), {
+                let rep = await window.fetch('api?fn=getCredentialsGetArgs' + getGetParams(), {
                     method: 'GET',
                     cache: 'no-cache'
                 });
@@ -110,7 +110,7 @@ license https://github.com/lbuchs/WebAuthn/blob/master/LICENSE MIT
                 };
 
                 // send to server
-                rep = await window.fetch('api?fn=processGet' + getGetParams(), {
+                rep = await window.fetch('api?fn=processCredentialsGet' + getGetParams(), {
                     method: 'POST',
                     body: JSON.stringify(authenticatorAttestationResponse),
                     cache: 'no-cache'

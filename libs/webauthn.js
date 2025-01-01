@@ -30,8 +30,8 @@ async function createRegistration() {
             throw new Error(createArgs.msg || 'Unknown error occured');
         }
 
-        // Replace binary base64 data with ArrayBuffer. a other way to do this
-        // is the reviver function of JSON.parse()
+        // Replace binary base64 data with ArrayBuffer.
+        // Another way to do this is the reviver function of JSON.parse()
         recursiveBase64StrToArrayBuffer(createArgs);
 
         // Create credentials
@@ -56,6 +56,67 @@ async function createRegistration() {
         if (authenticatorAttestationServerResponse.success) {
             //window.alert(authenticatorAttestationServerResponse.msg || 'registration success');
             errorBox.textContent = authenticatorAttestationServerResponse.msg || 'registration success';
+        } else {
+            throw new Error(authenticatorAttestationServerResponse.msg);
+        }
+
+    } catch (err) {
+        errorBox.textContent = err;
+        //window.alert(err.message || 'unknown error occured');
+    }
+}
+
+/**
+ * Checks a FIDO2 registration
+ * @returns {undefined}
+ */
+async function checkRegistration() {
+    try {
+        if (!window.fetch || !navigator.credentials || !navigator.credentials.create) {
+            throw new Error('Browser not supported.');
+        }
+
+        // Get Check args
+        let rep = await window.fetch('api?fn=getCredentialsGetArgs' + getURLParams(), {
+            method: 'GET',
+            cache: 'no-cache'
+        });
+        const getArgs = await rep.json();
+
+        // Error handling
+        if (getArgs.success === false) {
+            throw new Error(getArgs.msg);
+        }
+
+        // Replace binary base64 data with ArrayBuffer.
+        // Another way to do this is the reviver function of JSON.parse()
+        recursiveBase64StrToArrayBuffer(getArgs);
+
+        // Check credentials with device
+        const cred = await navigator.credentials.get(getArgs);
+
+        // Create object to transmit to server
+        const authenticatorAttestationResponse = {
+            id: cred.rawId ? arrayBufferToBase64(cred.rawId) : null,
+            clientDataJSON: cred.response.clientDataJSON ? arrayBufferToBase64(cred.response.clientDataJSON) : null,
+            authenticatorData: cred.response.authenticatorData ? arrayBufferToBase64(cred.response.authenticatorData) : null,
+            signature: cred.response.signature ? arrayBufferToBase64(cred.response.signature) : null,
+            userHandle: cred.response.userHandle ? arrayBufferToBase64(cred.response.userHandle) : null
+        };
+
+        // Send to server
+        rep = await window.fetch('api?fn=processCredentialsGet' + getURLParams(), {
+            method: 'POST',
+            body: JSON.stringify(authenticatorAttestationResponse),
+            cache: 'no-cache'
+        });
+        const authenticatorAttestationServerResponse = await rep.json();
+
+        // Check server response
+        if (authenticatorAttestationServerResponse.success) {
+            //errorBox.textContent = authenticatorAttestationServerResponse.msg || 'Login success';
+            //window.alert(authenticatorAttestationServerResponse.msg || 'login success');
+            return true;
         } else {
             throw new Error(authenticatorAttestationServerResponse.msg);
         }
