@@ -46,41 +46,6 @@ const RP_NAME = 'Timeline'; # Add site name or domain
 const USER_ID = '01'; # For a single user instance we use a constant one
 const TIMEOUT_SECS = 30;
 
-/*
-const FILE_PATH = 'private/webauthn/secrets.json';
-function saveJsonToFile($filePath, $data) {
-    # Convert PHP array or object to JSON string
-    $jsonData = json_encode($data, JSON_PRETTY_PRINT);
-    if ($jsonData === false) {
-        var_dump($data);
-        die("Error encoding JSON: " . json_last_error_msg());
-    }
-
-    # Save JSON string to the file
-    if (file_put_contents($filePath, $jsonData) === false) {
-        die("Error writing to file: $filePath");
-    }
-}
-
-function loadJsonFromFile($filePath) {
-    # Read JSON string from the file
-    $jsonData = file_get_contents($filePath);
-    if ($jsonData === false) {
-        # If doesn't exist, create an empty array
-        return [];
-    }
-
-    # Convert JSON string back to PHP array
-    $data = json_decode($jsonData, true);
-    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-        # If it's corrupted, return an empty array
-        return [];
-    }
-
-    return $data;
-}
-*/
-
 try {
     session_start();
 
