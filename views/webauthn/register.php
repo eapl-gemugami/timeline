@@ -29,7 +29,7 @@ $registrations = getWebauthnRegistrations(DEFAULT_USER_ID);
     <?php foreach ($registrations as $registration) { ?>
     <tr>
         <td><?= $registration['deviceDisplayName'] ?></td>
-        <td>-</td>
+        <td><?= date('Y-d-m H:i:s', $registration['registrationDate']) ?> (UTC)</td>
         <td>
         <button type="button" class="button">
             <span class="button__text">Remove</span>

@@ -186,6 +186,8 @@ try {
         $data->credentialId = base64_encode($data->credentialId);
         $data->AAGUID = base64_encode($data->AAGUID);
 
+        $data->registrationDate = time();
+
         $jsonData = loadJsonFromFile(FILE_PATH);
         $jsonData[] = $data;
         saveJsonToFile(FILE_PATH, $jsonData);
