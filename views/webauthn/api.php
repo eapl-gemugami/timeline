@@ -36,16 +36,18 @@
 # TODO: 2024-12
 # [x] Save keys into a file
 # [x] Disable showing sensitive debug info
-# [ ] Check that a user already registered can't register again
+# [x] Check that a user already registered can't register again
+# [ ] Save registration date
 
 require_once 'libs/WebAuthn-2.2.0/WebAuthn.php';
+require_once 'libs/WebAuthn-2.2.0/JsonManager.php';
 
 const RP_NAME = 'Timeline'; # Add site name or domain
 const USER_ID = '01'; # For a single user instance we use a constant one
 const TIMEOUT_SECS = 30;
 
-$filePath = 'private/webauthn/secrets.json';
-
+/*
+const FILE_PATH = 'private/webauthn/secrets.json';
 function saveJsonToFile($filePath, $data) {
     # Convert PHP array or object to JSON string
     $jsonData = json_encode($data, JSON_PRETTY_PRINT);
@@ -77,6 +79,7 @@ function loadJsonFromFile($filePath) {
 
     return $data;
 }
+*/
 
 try {
     session_start();
@@ -189,7 +192,7 @@ try {
         # Exclude credential IDs for that user
         $excludeCredentialIds = [];
 
-        $jsonContent = loadJsonFromFile($filePath);
+        $jsonContent = loadJsonFromFile(FILE_PATH);
         foreach ($jsonContent as $reg) {
             if ($reg['userId'] === $userId) {
                 $excludeCredentialIds[] = base64_decode($reg['credentialId']);
@@ -236,7 +239,7 @@ try {
         */
 
         if (!$requireResidentKey) {
-            $registrations = loadJsonFromFile($filePath);
+            $registrations = loadJsonFromFile(FILE_PATH);
             foreach ($registrations as $reg) {
                 if ($reg['userId'] === USER_ID) {
                     $ids[] = $reg['credentialId'];
@@ -271,13 +274,13 @@ try {
         $data->credentialId = base64_encode($data->credentialId);
         $data->AAGUID = base64_encode($data->AAGUID);
 
-        $jsonData = loadJsonFromFile($filePath);
+        $jsonData = loadJsonFromFile(FILE_PATH);
 
         # NOTE: Checking if the device is already registered was removed
         # But perhaps it'll need to be added again for some devices.
 
         $jsonData[] = $data;
-        saveJsonToFile($filePath, $jsonData);
+        saveJsonToFile(FILE_PATH, $jsonData);
 
         $msg = 'Registration success.';
         if ($data->rootValid === false) {
@@ -306,7 +309,7 @@ try {
         // Looking up correspondending public key of the credential id
         // you should also validate that only ids of the given user name
         // are taken for the login.
-        $registrations = loadJsonFromFile($filePath);
+        $registrations = loadJsonFromFile(FILE_PATH);
         foreach ($registrations as $reg) {
             if ($reg['credentialId'] === $post->id) {
                 $credentialPublicKey = $reg['credentialPublicKey'];

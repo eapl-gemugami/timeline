@@ -1,11 +1,6 @@
 <?php
-# TODO: Check that the user is logged in
-
-if (!isset($_SESSION['password'])) {
-    # Redirect to login
-}
-
-include 'partials/header_no_twts.php';
+include 'partials/base.php';
+include 'partials/header.php';
 ?>
 <h2>Login with passkey</h2>
 <div class="error-box"></div>

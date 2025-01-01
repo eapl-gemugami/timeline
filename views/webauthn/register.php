@@ -1,17 +1,43 @@
 <?php
-# TODO: Check that the user is logged in
+session_start();
 
 if (!isset($_SESSION['password'])) {
-    # Redirect to login
+    header('Location: ../login');
+    exit();
 }
 
-include 'partials/header_no_twts.php';
+include 'partials/base.php';
+include 'partials/header.php';
+require_once 'libs/WebAuthn-2.2.0/JsonManager.php';
+
+const DEFAULT_USER_ID = '01';
+$registrations = getWebauthnRegistrations(DEFAULT_USER_ID);
 ?>
 <h2>Register new passkey</h2>
 <div class="error-box"></div>
 <button type="button" class="button button_spinner" onclick="register()">
     <span class="button__text">Register a new passkey</span>
 </button>
+
+<table>
+    <tr>
+        <th>Device</th>
+        <th>Registration Date</th>
+        <th>Action</th>
+    </tr>
+
+    <?php foreach ($registrations as $registration) { ?>
+    <tr>
+        <td><?= $registration['deviceDisplayName'] ?></td>
+        <td>-</td>
+        <td>
+        <button type="button" class="button">
+            <span class="button__text">Remove</span>
+        </button>
+        </td>
+    </tr>
+    <?php } ?>
+</table>
 
 <script src="../libs/webauthn.js"></script>
 <script>
