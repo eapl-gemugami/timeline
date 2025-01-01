@@ -49,7 +49,7 @@ const TIMEOUT_SECS = 30;
 try {
     session_start();
 
-    // read get argument and post body
+    // Read get argument and post body
     $fn = filter_input(INPUT_GET, 'fn');
     $requireResidentKey = !!filter_input(INPUT_GET, 'requireResidentKey');
     $userVerification = filter_input(INPUT_GET, 'userVerification', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -68,7 +68,6 @@ try {
     }
 
     if ($fn !== 'getStoredDataHtml') {
-        // Formats
         $formats = [];
         if (filter_input(INPUT_GET, 'fmt_android-key')) {
             $formats[] = 'android-key';
@@ -100,14 +99,14 @@ try {
             }
         }
 
-        // types selected on front end
+        // Types selected on front end
         $typeUsb = !!filter_input(INPUT_GET, 'type_usb');
         $typeNfc = !!filter_input(INPUT_GET, 'type_nfc');
         $typeBle = !!filter_input(INPUT_GET, 'type_ble');
         $typeInt = !!filter_input(INPUT_GET, 'type_int');
         $typeHyb = !!filter_input(INPUT_GET, 'type_hybrid');
 
-        // cross-platform: true, if type internal is not allowed
+        // Cross-platform: true, if type internal is not allowed
         //                 false, if only internal is allowed
         //                 null, if internal and cross-platform is allowed
         $crossPlatformAttachment = null;
@@ -117,41 +116,13 @@ try {
             $crossPlatformAttachment = false;
         }
 
-        // new Instance of the server library.
+        // New Instance of the server library.
         // make sure that $rpId is the domain name.
         $WebAuthn = new lbuchs\WebAuthn\WebAuthn(RP_NAME, $rpId, $formats);
-
-        // add root certificates to validate new registrations
-        /*
-        if (filter_input(INPUT_GET, 'solo')) {
-            $WebAuthn->addRootCertificates('rootCertificates/solo.pem');
-            $WebAuthn->addRootCertificates('rootCertificates/solokey_f1.pem');
-            $WebAuthn->addRootCertificates('rootCertificates/solokey_r1.pem');
-        }
-        if (filter_input(INPUT_GET, 'apple')) {
-            $WebAuthn->addRootCertificates('rootCertificates/apple.pem');
-        }
-        if (filter_input(INPUT_GET, 'yubico')) {
-            $WebAuthn->addRootCertificates('rootCertificates/yubico.pem');
-        }
-        if (filter_input(INPUT_GET, 'hypersecu')) {
-            $WebAuthn->addRootCertificates('rootCertificates/hypersecu.pem');
-        }
-        if (filter_input(INPUT_GET, 'google')) {
-            $WebAuthn->addRootCertificates('rootCertificates/globalSign.pem');
-            $WebAuthn->addRootCertificates('rootCertificates/googleHardware.pem');
-        }
-        if (filter_input(INPUT_GET, 'microsoft')) {
-            $WebAuthn->addRootCertificates('rootCertificates/microsoftTpmCollection.pem');
-        }
-        if (filter_input(INPUT_GET, 'mds')) {
-            $WebAuthn->addRootCertificates('rootCertificates/mds');
-        }
-        */
     }
 
     // ------------------------------------
-    // request for create arguments
+    // Request for create arguments - getCreateArgs
     // ------------------------------------
     if ($fn === 'getCreateArgs') {
         # Exclude credential IDs for that user
@@ -174,34 +145,10 @@ try {
         $_SESSION['challenge'] = $WebAuthn->getChallenge();
 
         // ------------------------------------
-        // request for get arguments
+        // Request for get arguments
         // ------------------------------------
-
     } else if ($fn === 'getCredentialsGetArgs') {
         $ids = [];
-
-        /*
-        if ($requireResidentKey) {
-            if (!isset($_SESSION['registrations']) || !is_array($_SESSION['registrations']) || count($_SESSION['registrations']) === 0) {
-                throw new Exception('we do not have any registrations in session to check the registration');
-            }
-        } else {
-            // load registrations from session stored there by processCreate.
-            // normaly you have to load the credential Id's for a username
-            // from the database.
-            if (isset($_SESSION['registrations']) && is_array($_SESSION['registrations'])) {
-                foreach ($_SESSION['registrations'] as $reg) {
-                    if ($reg->userId === $userId) {
-                        $ids[] = $reg->credentialId;
-                    }
-                }
-            }
-
-            if (count($ids) === 0) {
-                throw new Exception("no registrations in session for userId $userId");
-            }
-        }
-        */
 
         if (!$requireResidentKey) {
             $registrations = loadJsonFromFile(FILE_PATH);
@@ -221,7 +168,7 @@ try {
         $_SESSION['challenge'] = $WebAuthn->getChallenge();
 
         // ------------------------------------
-        // process create
+        // processCreate
         // ------------------------------------
     } else if ($fn === 'processCreate') {
         $clientDataJSON = base64_decode($post->clientDataJSON);
@@ -240,10 +187,6 @@ try {
         $data->AAGUID = base64_encode($data->AAGUID);
 
         $jsonData = loadJsonFromFile(FILE_PATH);
-
-        # NOTE: Checking if the device is already registered was removed
-        # But perhaps it'll need to be added again for some devices.
-
         $jsonData[] = $data;
         saveJsonToFile(FILE_PATH, $jsonData);
 
@@ -260,7 +203,7 @@ try {
         print(json_encode($return));
 
         // ------------------------------------
-        // proccess get
+        // processCredentialsGet
         // ------------------------------------
     } else if ($fn === 'processCredentialsGet') {
         $clientDataJSON = base64_decode($post->clientDataJSON);
@@ -271,9 +214,9 @@ try {
         $challenge = $_SESSION['challenge'] ?? '';
         $credentialPublicKey = null;
 
-        // Looking up correspondending public key of the credential id
-        // you should also validate that only ids of the given user name
-        // are taken for the login.
+        # Looking up correspondending public key of the credential id
+        # you should also validate that only ids of the given user name
+        # are taken for the login.
         $registrations = loadJsonFromFile(FILE_PATH);
         foreach ($registrations as $reg) {
             if ($reg['credentialId'] === $post->id) {
@@ -286,14 +229,14 @@ try {
             throw new Exception('Public Key for credential ID not found!');
         }
 
-        // If we have resident key, we have to verify
-        // that the userHandle is the provided userId at registration
+        # If we have resident key, we have to verify
+        # that the userHandle is the provided userId at registration
         if ($requireResidentKey && $userHandle !== hex2bin($reg['userId'])) {
             throw new \Exception('userId doesnt match (is '
                 . bin2hex($userHandle) . ' but expect ' . $reg->userId . ')');
         }
 
-        // Process the get request. throws WebAuthnException if it fails
+        # Process the get request. throws WebAuthnException if it fails
         $WebAuthn->processGet($clientDataJSON, $authenticatorData, $signature, $credentialPublicKey, $challenge, null, $userVerification === 'required');
 
         # Check if we can set the session cookie here
@@ -307,76 +250,20 @@ try {
         print(json_encode($return));
 
         // ------------------------------------
-        // proccess clear registrations
+        // Get root certs from FIDO Alliance Metadata Service - DEPRECATED
         // ------------------------------------
-        /*
-    } else if ($fn === 'clearRegistrations') {
-        $_SESSION['registrations'] = null;
-        $_SESSION['challenge'] = null;
-
-        $return = new stdClass();
-        $return->success = true;
-        $return->msg = 'all registrations deleted';
-
-        header('Content-Type: application/json');
-        print(json_encode($return));
-
-        // ------------------------------------
-        // display stored data as HTML
-        // ------------------------------------
-
-    */
-    } else if ($fn === 'getStoredDataHtml') {
-        /*
-        $html = '<!DOCTYPE html>' . "\n";
-        $html .= '<html><head><style>tr:nth-child(even){background-color: #f2f2f2;}</style></head>';
-        $html .= '<body style="font-family:sans-serif">';
-        if (isset($_SESSION['registrations']) && is_array($_SESSION['registrations'])) {
-            $html .= '<p>There are ' . count($_SESSION['registrations']) . ' registrations in this session:</p>';
-            foreach ($_SESSION['registrations'] as $reg) {
-                $html .= '<table style="border:1px solid black;margin:10px 0;">';
-                foreach ($reg as $key => $value) {
-
-                    if (is_bool($value)) {
-                        $value = $value ? 'yes' : 'no';
-                    } else if (is_null($value)) {
-                        $value = 'null';
-                    } else if (is_object($value)) {
-                        $value = chunk_split(strval($value), 64);
-                    } else if (is_string($value) && strlen($value) > 0 && htmlspecialchars($value, ENT_QUOTES) === '') {
-                        $value = chunk_split(bin2hex($value), 64);
-                    }
-                    $html .= '<tr><td>' . htmlspecialchars($key) . '</td><td style="font-family:monospace;">' . nl2br(htmlspecialchars($value)) . '</td>';
-                }
-                $html .= '</table>';
-            }
-        } else {
-            $html .= '<p>There are no registrations in this session.</p>';
-        }
-        $html .= '</body></html>';
-        */
-        $html = 'Data preview disabled';
-
-        header('Content-Type: text/html');
-        print $html;
-
-        // ------------------------------------
-        // get root certs from FIDO Alliance Metadata Service
-        // ------------------------------------
-
     } else if ($fn === 'queryFidoMetaDataService') {
-
         $mdsFolder = 'rootCertificates/mds';
         $success = false;
         $msg = null;
 
-        // fetch only 1x / 24h
-        $lastFetch = \is_file($mdsFolder .  '/lastMdsFetch.txt') ? \strtotime(\file_get_contents($mdsFolder .  '/lastMdsFetch.txt')) : 0;
+        // Fetch only 1x / 24h
+        $lastFetch = \is_file( "$mdsFolder/lastMdsFetch.txt") ? \strtotime(\file_get_contents("$mdsFolder/lastMdsFetch.txt")) : 0;
         if ($lastFetch + (3600 * 48) < \time()) {
             $cnt = $WebAuthn->queryFidoMetaDataService($mdsFolder);
             $success = true;
-            \file_put_contents($mdsFolder .  '/lastMdsFetch.txt', date('r'));
-            $msg = 'successfully queried FIDO Alliance Metadata Service - ' . $cnt . ' certificates downloaded.';
+            \file_put_contents( "$mdsFolder/lastMdsFetch.txt", date('r'));
+            $msg = "successfully queried FIDO Alliance Metadata Service - $cnt certificates downloaded.";
         } else {
             $msg = 'Fail: last fetch was at ' . date('r', $lastFetch) . ' - fetch only 1x every 48h';
         }
