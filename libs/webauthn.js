@@ -198,7 +198,7 @@ function getURLParams() {
     url += '&userDisplayName=Timeline Admin';
 
     //url += '&userVerification=discouraged';
-    url += '&userVerification=required';
+    url += '&userVerification=preferred';
 
     return url;
 }

@@ -10,6 +10,7 @@ const FILE_PATH = 'private/webauthn/secrets.json';
 const DEVICE_TYPE = [
     "1UiCbnm020Cj2BERb36DSQ==" => 'Bitwarden',
     "6puNZk0BHSE85La0jLV11A==" => 'Google Password Manager',
+    "/bFBsl2ERD6KNUaYwgWlAg==" => 'KeePassXC',
 ];
 
 function saveJsonToFile($filePath, $data) {
