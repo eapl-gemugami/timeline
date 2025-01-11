@@ -7,10 +7,32 @@ const TIMEOUT_SECS = 30;
 
 const FILE_PATH = 'private/webauthn/secrets.json';
 
+# From https://www.corbado.com/glossary/aaguid
 const DEVICE_TYPE = [
-    "1UiCbnm020Cj2BERb36DSQ==" => 'Bitwarden',
-    "6puNZk0BHSE85La0jLV11A==" => 'Google Password Manager',
-    "/bFBsl2ERD6KNUaYwgWlAg==" => 'KeePassXC',
+    'AAAAAAAAAAAAAAAAAAAAAA==' => 'Generic or unspecified device',
+    '1UiCbnm020Cj2BERb36DSQ==' => 'Bitwarden',
+    '6puNZk0BHSE85La0jLV11A==' => 'Google Password Manager',
+    'rc4AAjW8xgpkiwsl8fBVAw==' => 'Chrome on Mac',
+    'CJhwWMrcS4G24TDeUNy+lg==' => 'Windows Hello',
+    'nd0YF69aRnKiuT492VAAqQ==' => 'Windows Hello',
+    'YCiwF7HUTAK0s6/Nr8lrsg==' => 'Windows Hello',
+    '3U7CieAdQcm7iXD6hF1L8g==' => 'iCloud Keychain (Managed)',
+    'UxEm1ucXQVyTID2appgSOQ==' => 'Dashlane',
+    'utpVZqeqQB+9lkVhmlUSDQ==' => '1Password',
+    'uE5ASBXcTdCGQPT2CBPIrw==' => 'NordPass',
+    'DqJCtEPEShuLF91tC2uuxg==' => 'Keeper',
+    '84CVQH8UScGos4+BOyJVQQ==' => 'Enpass',
+    'tTl2ZkiFqmvOv+UiYqQ5og==' => 'Chromium Browser',
+    'dxtI/dPUT3SSMvwVerBQeg==' => 'Edge on Mac',
+    'OaVkfhhTRGyh9qebrp9bxw==' => 'IDmelon',
+    '+/wwBxVOTsyMC24CBVfXvQ==' => 'iCloud Keychain',
+    'U0FNU1VORwAAAAAAAAAAAA==' => 'Samsung Pass',
+    'ZqDMs71qGR/uBuN1xQuYRg==' => 'Thales Bio iOS SDK',
+    'iDYzavWQCSEwHUZCdTHu5g==' => 'Thales Bio Android SDK',
+    'zWmttTx63rkxd2gA6my3Kg==' => 'Thales PIN Android SDK',
+    'FykPHsISNNAUIzZdcp8J2Q==' => 'Thales PIN iOS SDK',
+    'UHJvdG9uUGFzc1Byb3Rvbg==' => 'Proton Pass',
+    '/bFBsl2ERD6KNUaYwgWlAg==' => 'KeePassXC',
 ];
 
 function saveJsonToFile($filePath, $data) {
