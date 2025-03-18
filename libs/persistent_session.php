@@ -25,8 +25,6 @@ session_start([
 	'use_strict_mode' => true,
 	'cookie_httponly' => true,
 	'cookie_secure' => $config['secure_cookies'],
-	'sid_length' => 64,
-	'sid_bits_per_character' => 6,
 	'cookie_samesite' => 'Strict', # Not compatible with PHP < 7.3
 ]);
 
