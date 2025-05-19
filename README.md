@@ -1,35 +1,25 @@
-# 🌀 timeline - create you own social website
+# 🌀 tl - your own micro-blogging site
 
-Created by sørenpeter (www.darch.dk)
+Forked by [eapl.me](https://eapl.mx) from [timeline](https://github.com/sorenpeter/timeline)
 
-So are you also tired of having to use big tech's social medias to stay connected with friends and interesting people, and having your privacy pried upon?
+## 🧶 What is tl?
 
-And are you a creative human, who want back control over you art, music, words, code, instead of having to shoehorn your soul into the grid of blackbox algorithms ?
+ActivityPub which is based on Twitter/X is a great micro-blogging platform, although it's implementations (GoToSocial, Mastodon) have an important problem for us, they are difficult and expensive to be self-hosted, and is almost impossible to use a shared hosting.
 
-Then it is you, who I've made timeline for.
+Our goal is to offer a minimalistic but complete way to host a micro-blogging timeline, which also allows to watch other users timelines, and reply to their messages.
 
-## 🧶 What is timeline and twtxt/yarn?
+`tl` is a PHP application on top of the a [texudus](https://texudus.readthedocs.io/) file specification to offer a whole micro-blogging experience.
 
-timeline is a handfull of small files that you upload to a server and access it via a browser.
-It then gives you an interface for posting words, links (and images too, soon), as well as following other peoples feeds and enganging in conversations by posting replies.
+If offers you a space to post texts (twts), images and links to your text feed, as well as following other feeds and engaging in conversations by posting replies.
 
-For the social features timeline are using the [twtxt](https://twtxt.readthedocs.io)  format and most of the twtxt Extensions developed in the context of Yarn.social](https://yarn.social/).
-
-timeline also support its own flavor  of WebMentions, so it is possible  to be notified about `@mentions` from feeds you are not currently/yet following.
-You can also search for others feeds using [WebFinger](https://webfinger.net/), if they got that set up on their servser, like it's the case for most yarn.social pods.
-
-My visions for timeline is to bring back the fun and quirkiness  of bygone sites such as Geocities of the 1990s and Myspace of the 2000s, that enables creating a personalized  place for you to express yourself online and also being able to follow others who inspire you.
+`tl` also supports Web Mentions as a form of [Linkback](https://en.wikipedia.org/wiki/Linkback), to be notified of `@mentions` from feeds you are not currently following.
 
 At the same time providing a good looking basic design with the help of [Simple.css](https://simplecss.org), which allows you to customize  the look and feel. Even to the level where timeline aligns with the design of your excsing webpage, like I did on: [darch.dk/timeline](https://darch.dk/timeline).
-
-See my talk about twtxt and timeline at Piksel Festival 2024: https://www.darch.dk/twtxtalk-piksel
 
 ![](media/screenshot.png)
 _Conversation view with replies / Profile view / Gallery View_
 
 ## 🚨 DISCLAIMER / WARNING
-
-I'm not a professional programmer, so this software might lead to data lose or making your website unsecure in unforeseen ways.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
 INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
@@ -85,19 +75,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## 🐞 Bugs to fix
 
-- [x] (2024-11-30) Fix issues with parsing markdown vs. twtxt syntax (replaceed slimdown with Parsedown, supporting lists, block quotes, code/blocks, links, images)
-- [x] (2024-12-26) Extend session duration for 30 days
-- [ ] (2024-12-26) Read the config.ini in a centralized place and add validations useful when installing or upgrading `timeline`.
-
-
 ## 🚀 Features to code
-
-- Make profile the default view, if user is not logged in (redo routing code)
-
-- UI for uploading images
-- UI buttoms for markdown when making post
-
-- Backend: Thumbnail cache support, to avoid loading all images in full resolution when viewing a gallery
 
 # 🙏 Credits / shoutouts
 
@@ -110,8 +88,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - [groovy-twtxt](https://git.mills.io/mckinley/groovy-twtxt) - A curated list of groovy twtxt-related projects
 
 ## Code by others
-
-- [twtxt-php](https://github.com/eapl-gemugami/twtxt-php) - A minimalistic and personal PHP site for your twtxt microblogging.
 
 - [Slimdown](https://github.com/jbroadway/slimdown) - A simple regex-based Markdown parser in PHP.
 
